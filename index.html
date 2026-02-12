@@ -1,1 +1,83 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Fake Review Detection | PBL 2026</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<style>
+body { background-color:#020617; color:#f8fafc; font-family:Arial, sans-serif; }
+.gradient-text {
+  background: linear-gradient(90deg,#60a5fa,#a855f7);
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+}
+.section { padding:80px 20px; max-width:900px; margin:auto; }
+h2 { font-size:32px; margin-bottom:20px; font-weight:bold; }
+ul li { margin-bottom:8px; }
+</style>
+</head>
+
+<body>
+
+<!-- TIMER -->
+<div id="timerContainer" style="position:fixed;bottom:20px;right:20px;background:white;color:black;padding:15px 25px;border-radius:20px;font-weight:bold;">
+<i class="fas fa-hourglass-start"></i>
+<span id="displayTime">00:00</span>
+</div>
+
+<script>
+let seconds = 0;
+function startTimer(){
+  setInterval(()=>{
+    seconds++;
+    let min = String(Math.floor(seconds/60)).padStart(2,'0');
+    let sec = String(seconds%60).padStart(2,'0');
+    document.getElementById("displayTime").innerText = min + ":" + sec;
+  },1000);
+}
+startTimer();
+</script>
+
+<!-- TITLE -->
+<section class="section text-center">
+<h1 class="text-5xl font-extrabold mb-6 gradient-text">
+AI-Based Fake Review Detection
+</h1>
+<p class="text-xl">Using NLP, Logistic Regression & Fuzzy Logic</p>
+<p class="mt-4">Khushi Wadhwa</p>
+<p>Registration ID: 2427030511</p>
+</section>
+
+<!-- PROBLEM -->
+<section class="section">
+<h2>Problem Statement</h2>
+<p>
+Fake reviews manipulate product ratings and mislead customers on e-commerce platforms.
+Manual detection is difficult and inefficient.
+An intelligent automated system is required to identify suspicious and fake reviews.
+</p>
+</section>
+
+<!-- OBJECTIVES -->
+<section class="section">
+<h2>Objectives</h2>
+<ul>
+<li>Detect fake reviews using NLP techniques</li>
+<li>Apply Machine Learning for classification</li>
+<li>Integrate Fuzzy Logic for uncertainty handling</li>
+<li>Deploy web-based demonstration system</li>
+</ul>
+</section>
+
+<!-- METHODOLOGY -->
+<section class="section">
+<h2>Methodology</h2>
+<ul>
+<li>NLP Preprocessing (Lowercasing, Stopword Removal)</li>
+<li>T
+
