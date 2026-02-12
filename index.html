@@ -4,46 +4,73 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Fake Review Detection | PBL 2026</title>
+<title>AI-Based Fake Review Detection | PBL 2026</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
 <style>
-body { background-color:#020617; color:#f8fafc; font-family:Arial, sans-serif; }
+body {
+  background-color:#020617;
+  color:#f8fafc;
+  font-family:Arial, sans-serif;
+  scroll-behavior:smooth;
+}
 .gradient-text {
   background: linear-gradient(90deg,#60a5fa,#a855f7);
   -webkit-background-clip:text;
   -webkit-text-fill-color:transparent;
 }
-.section { padding:80px 20px; max-width:900px; margin:auto; }
-h2 { font-size:32px; margin-bottom:20px; font-weight:bold; }
-ul li { margin-bottom:8px; }
+.section {
+  padding:80px 20px;
+  max-width:1000px;
+  margin:auto;
+}
+h2 {
+  font-size:32px;
+  margin-bottom:20px;
+  font-weight:bold;
+}
+ul li {
+  margin-bottom:8px;
+}
+.navbar {
+  position:fixed;
+  top:0;
+  width:100%;
+  background:#0f172a;
+  padding:15px 40px;
+  display:flex;
+  justify-content:space-between;
+  z-index:1000;
+}
+.navbar a {
+  color:white;
+  margin-left:20px;
+  text-decoration:none;
+}
+.navbar a:hover {
+  color:#60a5fa;
+}
 </style>
 </head>
 
 <body>
 
-<!-- TIMER -->
-<div id="timerContainer" style="position:fixed;bottom:20px;right:20px;background:white;color:black;padding:15px 25px;border-radius:20px;font-weight:bold;">
-<i class="fas fa-hourglass-start"></i>
-<span id="displayTime">00:00</span>
+<!-- NAVIGATION -->
+<div class="navbar">
+  <div class="font-bold">PBL 2026 | CSE</div>
+  <div>
+    <a href="#problem">Problem</a>
+    <a href="#methodology">Methodology</a>
+    <a href="#results">Results</a>
+    <a href="#conclusion">Conclusion</a>
+  </div>
 </div>
 
-<script>
-let seconds = 0;
-function startTimer(){
-  setInterval(()=>{
-    seconds++;
-    let min = String(Math.floor(seconds/60)).padStart(2,'0');
-    let sec = String(seconds%60).padStart(2,'0');
-    document.getElementById("displayTime").innerText = min + ":" + sec;
-  },1000);
-}
-startTimer();
-</script>
+<br><br><br><br>
 
-<!-- TITLE -->
+<!-- TITLE SLIDE -->
 <section class="section text-center">
 <h1 class="text-5xl font-extrabold mb-6 gradient-text">
 AI-Based Fake Review Detection
@@ -54,12 +81,12 @@ AI-Based Fake Review Detection
 </section>
 
 <!-- PROBLEM -->
-<section class="section">
+<section class="section" id="problem">
 <h2>Problem Statement</h2>
 <p>
 Fake reviews manipulate product ratings and mislead customers on e-commerce platforms.
-Manual detection is difficult and inefficient.
-An intelligent automated system is required to identify suspicious and fake reviews.
+Manual detection is difficult and unreliable.
+There is a need for an automated intelligent system to detect fake and suspicious reviews.
 </p>
 </section>
 
@@ -67,17 +94,122 @@ An intelligent automated system is required to identify suspicious and fake revi
 <section class="section">
 <h2>Objectives</h2>
 <ul>
-<li>Detect fake reviews using NLP techniques</li>
+<li>Detect fake reviews using Natural Language Processing (NLP)</li>
 <li>Apply Machine Learning for classification</li>
-<li>Integrate Fuzzy Logic for uncertainty handling</li>
-<li>Deploy web-based demonstration system</li>
+<li>Integrate Fuzzy Logic for uncertainty-aware decisions</li>
+<li>Deploy a web-based demonstration interface</li>
 </ul>
 </section>
 
-<!-- METHODOLOGY -->
+<!-- DATASET -->
 <section class="section">
-<h2>Methodology</h2>
+<h2>Dataset</h2>
 <ul>
-<li>NLP Preprocessing (Lowercasing, Stopword Removal)</li>
-<li>T
+<li>Amazon Reviews Dataset (Kaggle)</li>
+<li>Reviews text and ratings</li>
+<li>Converted ratings into binary labels</li>
+<li>Balanced dataset for fair classification</li>
+</ul>
+</section>
+
+<!-- NLP -->
+<section class="section">
+<h2>NLP Preprocessing</h2>
+<ul>
+<li>Lowercasing</li>
+<li>Punctuation removal</li>
+<li>Stopword removal</li>
+<li>Text cleaning and tokenization</li>
+</ul>
+</section>
+
+<!-- FEATURE EXTRACTION -->
+<section class="section">
+<h2>Feature Extraction</h2>
+<p>
+TF-IDF (Term Frequency – Inverse Document Frequency)
+</p>
+<ul>
+<li>Converts text into numerical vectors</li>
+<li>Measures importance of words</li>
+<li>Enables machine learning classification</li>
+</ul>
+</section>
+
+<!-- MODEL -->
+<section class="section">
+<h2>Machine Learning Model</h2>
+<ul>
+<li>Algorithm: Logistic Regression</li>
+<li>Binary Classification (Fake / Genuine)</li>
+<li>Provides probability-based output</li>
+<li>Balanced dataset accuracy ≈ 70%</li>
+</ul>
+</section>
+
+<!-- FUZZY LOGIC -->
+<section class="section" id="methodology">
+<h2>Fuzzy Logic Integration</h2>
+<p>Instead of strict binary output:</p>
+<ul>
+<li>0 – 0.45 → Likely Genuine</li>
+<li>0.45 – 0.55 → Suspicious</li>
+<li>0.55 – 1 → Likely Fake</li>
+</ul>
+<p>This handles uncertainty and improves interpretability.</p>
+</section>
+
+<!-- SYSTEM ARCHITECTURE -->
+<section class="section">
+<h2>System Architecture</h2>
+<p>
+User Input → NLP → TF-IDF → Logistic Regression → Probability → Fuzzy Logic → Final Output
+</p>
+</section>
+
+<!-- RESULTS -->
+<section class="section" id="results">
+<h2>Results</h2>
+<ul>
+<li>Successfully detects Genuine reviews</li>
+<li>Identifies Suspicious reviews</li>
+<li>Flags Likely Fake reviews</li>
+<li>Provides confidence percentage</li>
+</ul>
+</section>
+
+<!-- IMPLEMENTATION -->
+<section class="section">
+<h2>Implementation</h2>
+<ul>
+<li>Programming Language: Python</li>
+<li>Libraries: Scikit-learn, NLTK, Gradio</li>
+<li>Frontend: Web-based interface</li>
+<li>Deployment: GitHub Pages</li>
+</ul>
+</section>
+
+<!-- CONCLUSION -->
+<section class="section" id="conclusion">
+<h2>Conclusion</h2>
+<p>
+The system successfully integrates NLP, Machine Learning,
+and Fuzzy Logic to detect fake reviews with uncertainty-aware classification.
+It provides a scalable foundation for e-commerce review analysis.
+</p>
+</section>
+
+<!-- FUTURE WORK -->
+<section class="section">
+<h2>Future Work</h2>
+<ul>
+<li>Train on larger dataset</li>
+<li>Deep Learning integration</li>
+<li>Chrome extension deployment</li>
+<li>Multi-language support</li>
+</ul>
+</section>
+
+</body>
+</html>
 
