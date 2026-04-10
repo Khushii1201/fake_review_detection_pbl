@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Fake Review Detector</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0f16;--s1:#18181f;--s2:#22222c;--s3:#2a2a36;
+  --border:rgba(255,255,255,.07);--text:#ededf5;--muted:#7878a0;
+  --fake:#ff4d6d;--fake2:#ff8096;--fd:rgba(255,77,109,.12);
+  --real:#00c896;--real2:#4de8b8;--rd:rgba(0,200,150,.12);
+  --accent:#7c6ff7;--accent2:#a78bfa;
+}
+body{width:320px;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:13px}
+
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 15px 11px;border-bottom:1px solid var(--border)}
+.hdr-l{display:flex;align-items:center;gap:9px}
+.hdr-icon{width:28px;height:28px;border-radius:50%;font-size:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center}
+.hdr-title{font-size:13px;font-weight:700}
+.hdr-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.srv{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted)}
+.srv-dot{width:8px;height:8px;border-radius:50%;background:#334155}
+.srv-dot.on{background:var(--real);box-shadow:0 0 5px rgba(0,200,150,.5)}
+.srv-dot.off{background:var(--fake)}
+
+.alert{display:none;margin:10px 13px 0;padding:9px 12px;background:var(--fd);border:1px solid rgba(255,77,109,.2);border-radius:8px;font-size:11px;color:var(--fake2);line-height:1.5}
+.alert.show{display:block}
+.alert code{background:var(--s3);padding:1px 6px;border-radius:4px;font-family:monospace;font-size:10px;color:var(--accent2)}
+
+.stats{display:flex;border-bottom:1px solid var(--border)}
+.stat{flex:1;padding:11px 8px;text-align:center;border-right:1px solid var(--border)}
+.stat:last-child{border-right:none}
+.sn{display:block;font-size:19px;font-weight:800;line-height:1;margin-bottom:2px}
+.sn.f{color:var(--fake)}.sn.r{color:var(--real)}.sn.a{color:var(--accent2)}
+.sl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+.ratio{margin:10px 13px 0}
+.ratio-lbl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-bottom:4px}
+.ratio-track{height:5px;background:var(--s3);border-radius:99px;overflow:hidden;display:flex}
+.rb-f{background:var(--fake);transition:width .6s ease}
+.rb-r{background:var(--real);transition:width .6s ease}
+
+.sec-title{padding:10px 14px 5px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)}
+.hist{padding:0 9px 6px;max-height:200px;overflow-y:auto}
+.hist::-webkit-scrollbar{width:3px}
+.hist::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+.hitem{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;transition:background .15s}
+.hitem:hover{background:var(--s2)}
+.hbadge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;flex-shrink:0}
+.hbadge.fake{background:var(--fd);color:var(--fake)}.hbadge.real{background:var(--rd);color:var(--real)}
+.htext{font-size:11px;color:var(--muted);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.hconf{font-size:11px;font-weight:700;flex-shrink:0}
+.hconf.fake{color:var(--fake)}.hconf.real{color:var(--real)}
+
+.empty{padding:26px 16px;text-align:center;color:var(--muted);font-size:12px;line-height:1.7}
+.empty-e{font-size:26px;margin-bottom:8px}
+
+.ftr{padding:9px 14px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:6px}
+.ftr-txt{font-size:9px;color:var(--muted)}
+.ftr-btns{display:flex;gap:6px}
+.btn-sm{font-size:10px;padding:4px 10px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;transition:all .15s}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent2)}
+.btn-sm.danger:hover{border-color:var(--fake);color:var(--fake2)}
+.btn-sm.success:hover{border-color:var(--real);color:var(--real2)}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div class="hdr-l">
+    <div class="hdr-icon">🔍</div>
+    <div><div class="hdr-title">Fake Review Detector</div><div class="hdr-sub">NLP + ML · v2.0</div></div>
+  </div>
+  <div class="srv"><div class="srv-dot" id="srv-dot"></div><span id="srv-lbl">Checking…</span></div>
+</div>
+
+<div class="alert" id="alert">
+  Flask is offline. Run <code>python app.py</code> to activate detection.
+</div>
+
+<div class="stats" id="stats" style="display:none">
+  <div class="stat"><span class="sn f" id="sf">0</span><span class="sl">Fake</span></div>
+  <div class="stat"><span class="sn r" id="sr">0</span><span class="sl">Real</span></div>
+  <div class="stat"><span class="sn a" id="st">0</span><span class="sl">Total</span></div>
+  <div class="stat"><span class="sn a" id="sp">—</span><span class="sl">Fake %</span></div>
+</div>
+
+<div class="ratio" id="ratio" style="display:none">
+  <div class="ratio-lbl"><span id="rl-f">Fake 0%</span><span id="rl-r">Real 0%</span></div>
+  <div class="ratio-track">
+    <div class="rb-f" id="rb-f" style="width:0%"></div>
+    <div class="rb-r" id="rb-r" style="width:100%"></div>
+  </div>
+</div>
+
+<div class="sec-title" id="hist-title" style="display:none">Scanned this session</div>
+<div class="hist" id="hist"></div>
+
+<div class="empty" id="empty">
+  <div class="empty-e">🛍️</div>
+  Open an Amazon product page —<br/>badges appear on every review automatically.
+</div>
+
+<div class="ftr">
+  <span class="ftr-txt">localhost:5000</span>
+  <div class="ftr-btns">
+    <button class="btn-sm success" id="export-btn">⬇ Export</button>
+    <button class="btn-sm danger"  id="clear-btn">🗑 Clear</button>
+  </div>
+</div>
+
+<script>
+async function checkServer() {
+  try {
+    const r = await fetch("http://localhost:5000/health",{signal:AbortSignal.timeout(2000)});
+    const on = r.ok;
+    document.getElementById("srv-dot").className = "srv-dot "+(on?"on":"off");
+    document.getElementById("srv-lbl").textContent = on?"Online":"Offline";
+    document.getElementById("alert").classList.toggle("show",!on);
+  } catch {
+    document.getElementById("srv-dot").className = "srv-dot off";
+    document.getElementById("srv-lbl").textContent = "Offline";
+    document.getElementById("alert").classList.add("show");
+  }
+}
+
+function render(h=[]) {
+  const empty = document.getElementById("empty");
+  const stats = document.getElementById("stats");
+  const ratio = document.getElementById("ratio");
+  const title = document.getElementById("hist-title");
+  const hist  = document.getElementById("hist");
+
+  if (!h.length) {
+    empty.style.display="block";
+    [stats,ratio,title].forEach(e=>e.style.display="none");
+    hist.innerHTML=""; return;
+  }
+
+  empty.style.display="none";
+  stats.style.display="flex";
+  [ratio,title].forEach(e=>e.style.display="block");
+
+  const fc=h.filter(x=>x.label===1).length, rc=h.length-fc;
+  const fp=Math.round(fc/h.length*100), rp=100-fp;
+
+  document.getElementById("sf").textContent=fc;
+  document.getElementById("sr").textContent=rc;
+  document.getElementById("st").textContent=h.length;
+  document.getElementById("sp").textContent=fp+"%";
+  document.getElementById("rb-f").style.width=fp+"%";
+  document.getElementById("rb-r").style.width=rp+"%";
+  document.getElementById("rl-f").textContent=`Fake ${fp}%`;
+  document.getElementById("rl-r").textContent=`Real ${rp}%`;
+
+  hist.innerHTML=h.slice(0,30).map(x=>{
+    const c=x.label===1?"fake":"real";
+    return `<div class="hitem">
+      <span class="hbadge ${c}">${x.verdict}</span>
+      <span class="htext">${x.snippet}</span>
+      <span class="hconf ${c}">${x.confidence}%</span>
+    </div>`;
+  }).join("");
+}
+
+function exportCSV(h) {
+  if (!h||!h.length){alert("No data to export.");return;}
+  const rows=[["Verdict","Confidence","Snippet","Timestamp"]];
+  h.forEach(x=>rows.push([x.verdict,x.confidence+"%",'"'+(x.snippet||"").replace(/"/g,'""')+'"',new Date(x.ts).toLocaleString()]));
+  const blob=new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="frd_export.csv";a.click();
+}
+
+let _h=[];
+document.getElementById("clear-btn").onclick=()=>chrome.storage.local.set({frd_h:[]},()=>{_h=[];render([])});
+document.getElementById("export-btn").onclick=()=>exportCSV(_h);
+
+checkServer();
+chrome.storage.local.get(["frd_h"],({frd_h})=>{_h=frd_h||[];render(_h);});
+</script>
+</body>
+</html>

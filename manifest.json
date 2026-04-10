@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Fake Review Detector",
+  "version": "2.0",
+  "description": "Detects fake Amazon reviews inline using NLP + ML. Shows verdict, confidence, keywords and can hide fake reviews.",
+  "permissions": ["activeTab", "storage"],
+  "host_permissions": [
+    "https://www.amazon.in/*",
+    "https://www.amazon.com/*",
+    "http://localhost:5000/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Fake Review Detector"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.amazon.in/*", "https://www.amazon.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

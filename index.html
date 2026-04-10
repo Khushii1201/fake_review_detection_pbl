@@ -1,215 +1,938 @@
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI-Based Fake Review Detection | PBL 2026</title>
-
-<script src="https://cdn.tailwindcss.com"></script>
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Fake Review Detector</title>
 <style>
-body {
-  background-color:#020617;
-  color:#f8fafc;
-  font-family:Arial, sans-serif;
-  scroll-behavior:smooth;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── THEMES ── */
+[data-theme="dark"]{
+  --bg:#0b0b10;--s1:#13131c;--s2:#1c1c28;--s3:#242433;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.13);
+  --text:#eeeef5;--muted:#7070a0;--muted2:#9090b8;
+  --card-shadow:0 4px 24px rgba(0,0,0,.4);
 }
-.gradient-text {
-  background: linear-gradient(90deg,#60a5fa,#a855f7);
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
+[data-theme="light"]{
+  --bg:#f0f0f8;--s1:#ffffff;--s2:#f5f5fc;--s3:#eaeaf5;
+  --border:rgba(0,0,0,0.08);--border2:rgba(0,0,0,0.14);
+  --text:#111128;--muted:#6060a0;--muted2:#4040a0;
+  --card-shadow:0 4px 24px rgba(0,0,0,.08);
 }
-.section {
-  padding:80px 20px;
-  max-width:1000px;
-  margin:auto;
+:root{
+  --accent:#6c63ff;--accent2:#9b94ff;
+  --fake:#ff4d6d;--fake2:#ff8096;--fakedim:rgba(255,77,109,.12);
+  --real:#00c896;--real2:#4de8b8;--realdim:rgba(0,200,150,.12);
+  --r:14px;
 }
-h2 {
-  font-size:32px;
-  margin-bottom:20px;
-  font-weight:bold;
+html{scroll-behavior:smooth}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  background:var(--bg);color:var(--text);min-height:100vh;
+  transition:background .3s,color .3s;
 }
-ul li {
-  margin-bottom:8px;
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 10%,rgba(108,99,255,.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 35% at 85% 85%,rgba(0,200,150,.04) 0%,transparent 60%);
 }
-.navbar {
-  position:fixed;
-  top:0;
-  width:100%;
-  background:#0f172a;
-  padding:15px 40px;
-  display:flex;
-  justify-content:space-between;
-  z-index:1000;
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:100;
+  background:var(--s1);border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;
+  backdrop-filter:blur(12px);
 }
-.navbar a {
-  color:white;
-  margin-left:20px;
-  text-decoration:none;
+.nav-brand{display:flex;align-items:center;gap:10px}
+.nav-icon{
+  width:32px;height:32px;border-radius:50%;font-size:16px;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  display:flex;align-items:center;justify-content:center;
 }
-.navbar a:hover {
-  color:#60a5fa;
+.nav-title{font-size:15px;font-weight:700;letter-spacing:-.3px}
+.nav-sub{font-size:10px;color:var(--muted);margin-top:1px}
+.nav-right{display:flex;align-items:center;gap:10px}
+.srv-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 12px;border-radius:99px;font-size:11px;font-weight:600;
+  background:var(--s2);border:1px solid var(--border);color:var(--muted2);
 }
+.srv-dot{width:7px;height:7px;border-radius:50%;background:#334155}
+.srv-dot.on{background:var(--real);box-shadow:0 0 6px rgba(0,200,150,.5)}
+.srv-dot.off{background:var(--fake)}
+.theme-btn{
+  width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+  background:var(--s2);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;transition:all .2s;
+}
+.theme-btn:hover{background:var(--s3)}
+
+/* ── TABS ── */
+.tabs{
+  display:flex;gap:4px;padding:0 4px;
+  background:var(--s2);border-bottom:1px solid var(--border);
+  overflow-x:auto;
+}
+.tab{
+  padding:14px 20px;font-size:13px;font-weight:600;
+  cursor:pointer;border:none;background:transparent;
+  color:var(--muted);border-bottom:2px solid transparent;
+  transition:all .2s;white-space:nowrap;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--accent2);border-bottom-color:var(--accent)}
+.tab-panel{display:none}.tab-panel.active{display:block}
+
+/* ── WRAP ── */
+.wrap{max-width:800px;margin:0 auto;padding:32px 20px 80px;position:relative;z-index:1}
+
+/* ── STATS BAR ── */
+.stats{display:flex;gap:10px;margin-bottom:24px}
+.stat{
+  flex:1;background:var(--s1);border:1px solid var(--border);
+  border-radius:12px;padding:14px 10px;text-align:center;
+  box-shadow:var(--card-shadow);transition:transform .2s;
+}
+.stat:hover{transform:translateY(-2px)}
+.stat.f-s{border-color:rgba(255,77,109,.2)}
+.stat.r-s{border-color:rgba(0,200,150,.2)}
+.sn{display:block;font-size:24px;font-weight:800;line-height:1;margin-bottom:3px}
+.sn.f{color:var(--fake)}.sn.r{color:var(--real)}.sn.a{color:var(--accent2)}
+.sl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.bump{animation:bump .35s ease}
+@keyframes bump{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+/* ── CARD ── */
+.card{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:var(--r);padding:26px;margin-bottom:18px;
+  box-shadow:var(--card-shadow);transition:border-color .3s;
+}
+.card:focus-within{border-color:var(--border2)}
+.card-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:14px}
+
+/* ── INPUTS ── */
+.input-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.input-lbl{font-size:13px;font-weight:600;color:var(--muted2)}
+.char-pill{font-size:11px;padding:2px 10px;border-radius:99px;background:var(--s3);color:var(--muted);transition:color .2s}
+.char-pill.ok{color:var(--accent2)}
+textarea,.tinput{
+  width:100%;background:var(--s2);border:1.5px solid var(--border);
+  border-radius:10px;padding:13px 15px;font-size:13px;font-family:inherit;
+  color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;
+}
+textarea{height:130px;resize:vertical;line-height:1.7}
+textarea:focus,.tinput:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(108,99,255,.14)}
+textarea::placeholder,.tinput::placeholder{color:var(--muted)}
+
+/* ── EXAMPLES ── */
+.ex-row{margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ex-lbl{font-size:11px;color:var(--muted)}
+.ex-btn{
+  font-size:11px;padding:4px 11px;border:1px solid var(--border);
+  border-radius:6px;background:var(--s2);color:var(--muted);cursor:pointer;transition:all .15s;
+}
+.ex-btn.f:hover{border-color:var(--fake);color:var(--fake2)}
+.ex-btn.r:hover{border-color:var(--real);color:var(--real2)}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:13px 20px;font-size:14px;font-weight:700;
+  border:none;border-radius:10px;cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  transition:opacity .2s,transform .15s,box-shadow .2s;
+}
+.btn:hover:not(:disabled){transform:translateY(-2px)}
+.btn:active:not(:disabled){transform:translateY(0)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  color:#fff;width:100%;margin-top:16px;
+}
+.btn-primary:hover:not(:disabled){box-shadow:0 8px 24px rgba(108,99,255,.3)}
+.btn-outline{
+  background:transparent;border:1.5px solid var(--border2);
+  color:var(--muted2);font-size:13px;padding:9px 16px;border-radius:8px;
+}
+.btn-outline:hover:not(:disabled){border-color:var(--accent);color:var(--accent2)}
+.btn-danger{background:var(--fakedim);border:1.5px solid rgba(255,77,109,.3);color:var(--fake2);font-size:12px;padding:7px 14px;border-radius:8px}
+.btn-success{background:var(--realdim);border:1.5px solid rgba(0,200,150,.3);color:var(--real2);font-size:12px;padding:7px 14px;border-radius:8px}
+.spinner{width:15px;height:15px;border-radius:50%;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;animation:spin .7s linear infinite;display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── ERROR / ALERT ── */
+.err{
+  display:none;margin-top:10px;padding:10px 14px;
+  background:var(--fakedim);border:1px solid rgba(255,77,109,.25);
+  border-radius:8px;font-size:12px;color:var(--fake2);
+}
+.srv-alert{
+  display:none;margin-bottom:18px;padding:13px 16px;
+  background:var(--fakedim);border:1px solid rgba(255,77,109,.2);
+  border-radius:10px;font-size:13px;color:var(--fake2);line-height:1.6;
+}
+.srv-alert.show{display:block}
+.srv-alert code{background:var(--s3);padding:2px 7px;border-radius:4px;font-family:monospace;font-size:11px;color:var(--accent2)}
+.hint{text-align:center;margin-top:8px;font-size:11px;color:var(--muted)}
+kbd{background:var(--s3);border:1px solid var(--border2);border-radius:4px;padding:1px 5px;font-size:10px;font-family:monospace;color:var(--muted2)}
+
+/* ── RESULT ── */
+.result{
+  background:var(--s1);border:1px solid var(--border);
+  border-radius:var(--r);overflow:hidden;display:none;
+  box-shadow:var(--card-shadow);animation:slideUp .4s cubic-bezier(.16,1,.3,1);
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+
+.vband{
+  padding:24px 26px;display:flex;align-items:center;gap:16px;
+  position:relative;overflow:hidden;
+}
+.vband::before{
+  content:'';position:absolute;inset:0;opacity:.03;
+  background:repeating-linear-gradient(45deg,currentColor 0,currentColor 1px,transparent 0,transparent 8px);
+}
+.vband.fake{background:var(--fakedim);border-bottom:1px solid rgba(255,77,109,.15);color:var(--fake)}
+.vband.real{background:var(--realdim);border-bottom:1px solid rgba(0,200,150,.15);color:var(--real)}
+.vicon{width:54px;height:54px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:26px;animation:pop .5s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pop{from{transform:scale(0) rotate(-20deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.vband.fake .vicon{background:rgba(255,77,109,.2)}
+.vband.real .vicon{background:rgba(0,200,150,.2)}
+.vlabel{font-size:26px;font-weight:800;letter-spacing:-.5px;line-height:1;margin-bottom:6px}
+.vband.fake .vlabel{color:var(--fake)}.vband.real .vlabel{color:var(--real)}
+.vsub{font-size:12px;color:var(--muted2);line-height:1.5}
+
+.rsec{padding:20px 26px;border-bottom:1px solid var(--border)}
+.rsec:last-child{border-bottom:none}
+.rtitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:12px}
+
+.conf-row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.conf-pct{font-size:30px;font-weight:800}
+.conf-pct.fake{color:var(--fake)}.conf-pct.real{color:var(--real)}
+.conf-hint{font-size:11px;color:var(--muted)}
+.bar-track{height:7px;background:var(--s3);border-radius:99px;overflow:hidden;margin-bottom:5px}
+.bar-fill{height:100%;border-radius:99px;width:0%;transition:width 1s cubic-bezier(.4,0,.2,1)}
+.bar-fill.fake{background:linear-gradient(90deg,var(--fake),var(--fake2))}
+.bar-fill.real{background:linear-gradient(90deg,var(--real),var(--real2))}
+.bar-labs{display:flex;justify-content:space-between;font-size:10px;color:var(--muted)}
+
+.donut-row{display:flex;align-items:center;gap:22px}
+.donut-wrap{position:relative;width:88px;height:88px;flex-shrink:0}
+.donut-wrap svg{transform:rotate(-90deg)}
+.donut-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:22px}
+.donut-legs{flex:1;display:flex;flex-direction:column;gap:10px}
+.dleg{display:flex;align-items:center;gap:10px}
+.dleg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dleg-dot.fake{background:var(--fake)}.dleg-dot.real{background:var(--real)}
+.dleg-name{font-size:13px;color:var(--muted2);flex:1}
+.dleg-val{font-size:15px;font-weight:700}
+.dleg-val.fake{color:var(--fake)}.dleg-val.real{color:var(--real)}
+
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{font-size:12px;font-weight:600;padding:5px 13px;border-radius:99px;border:1px solid transparent;animation:chipIn .3s ease both}
+.chip.fake{background:rgba(255,77,109,.1);border-color:rgba(255,77,109,.25);color:var(--fake2)}
+.chip.real{background:rgba(0,200,150,.1);border-color:rgba(0,200,150,.25);color:var(--real2)}
+@keyframes chipIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+
+.hlist{display:flex;flex-direction:column;gap:6px}
+.hitem{display:flex;align-items:center;gap:9px;padding:8px 11px;border-radius:9px;background:var(--s2);transition:background .15s}
+.hitem:hover{background:var(--s3)}
+.hbadge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;flex-shrink:0}
+.hbadge.fake{background:var(--fakedim);color:var(--fake)}.hbadge.real{background:var(--realdim);color:var(--real)}
+.htext{font-size:11px;color:var(--muted);flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.hconf{font-size:11px;font-weight:700;flex-shrink:0}
+.hconf.fake{color:var(--fake)}.hconf.real{color:var(--real)}
+
+/* ── BATCH ── */
+.file-drop{
+  border:2px dashed var(--border2);border-radius:12px;padding:32px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--s2);
+}
+.file-drop:hover,.file-drop.drag{border-color:var(--accent);background:rgba(108,99,255,.05)}
+.file-drop input{display:none}
+.file-icon{font-size:36px;margin-bottom:10px}
+.file-title{font-size:14px;font-weight:600;margin-bottom:4px}
+.file-hint{font-size:12px;color:var(--muted)}
+
+.batch-table-wrap{max-height:420px;overflow-y:auto;border-radius:10px;border:1px solid var(--border)}
+.batch-table-wrap::-webkit-scrollbar{width:4px}
+.batch-table-wrap::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+thead{position:sticky;top:0;background:var(--s2);z-index:1}
+th{padding:10px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:10px 14px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--s2)}
+.verdict-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;padding:2px 9px;border-radius:99px}
+.verdict-pill.fake{background:var(--fakedim);color:var(--fake)}.verdict-pill.real{background:var(--realdim);color:var(--real)}
+
+.batch-summary{
+  display:flex;gap:10px;margin-bottom:16px;padding:16px;
+  background:var(--s2);border-radius:10px;border:1px solid var(--border);
+}
+.bsum-item{flex:1;text-align:center}
+.bsum-n{font-size:22px;font-weight:800}
+.bsum-n.f{color:var(--fake)}.bsum-n.r{color:var(--real)}.bsum-n.a{color:var(--accent2)}
+.bsum-l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+
+/* ── COMPARE ── */
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:580px){.compare-grid{grid-template-columns:1fr}}
+.cmp-panel{background:var(--s2);border:1px solid var(--border);border-radius:12px;padding:16px}
+.cmp-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px}
+.cmp-result{
+  margin-top:12px;padding:12px;border-radius:9px;font-size:12px;line-height:1.6;
+  background:var(--s1);border:1px solid var(--border);display:none;
+}
+.cmp-result.show{display:block}
+.cmp-verdict{font-size:16px;font-weight:800;margin-bottom:6px}
+.cmp-verdict.fake{color:var(--fake)}.cmp-verdict.real{color:var(--real)}
+.cmp-row{display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.cmp-lbl{color:var(--muted)}.cmp-val{font-weight:700}
+.vs-divider{
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;font-weight:800;color:var(--muted2);
+  background:var(--s3);border-radius:50%;width:36px;height:36px;
+  margin:auto;align-self:center;flex-shrink:0;border:1px solid var(--border);
+}
+.cmp-winner{
+  margin-top:16px;padding:14px;border-radius:10px;font-size:13px;
+  text-align:center;font-weight:600;display:none;
+}
+.cmp-winner.show{display:block}
+.cmp-winner.tie{background:var(--s3);color:var(--muted2)}
+.cmp-winner.a-wins{background:var(--realdim);color:var(--real2);border:1px solid rgba(0,200,150,.2)}
+.cmp-winner.b-wins{background:var(--fakedim);color:var(--fake2);border:1px solid rgba(255,77,109,.2)}
+
+/* ── PROGRESS BAR (batch) ── */
+.progress-wrap{margin:16px 0;display:none}
+.progress-wrap.show{display:block}
+.progress-track{height:6px;background:var(--s3);border-radius:99px;overflow:hidden;margin-bottom:6px}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;width:0%;transition:width .3s ease}
+.progress-label{font-size:11px;color:var(--muted);text-align:center}
+
+/* ── EXPORT ROW ── */
+.export-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 </style>
 </head>
-
 <body>
 
-<!-- NAVIGATION -->
-<div class="navbar">
-  <div class="font-bold">PBL 2026 | CSE</div>
-  <div>
-    <a href="#problem">Problem</a>
-    <a href="#methodology">Methodology</a>
-    <a href="#results">Results</a>
-    <a href="#conclusion">Conclusion</a>
+<!-- Nav -->
+<nav>
+  <div class="nav-brand">
+    <div class="nav-icon">🔍</div>
+    <div>
+      <div class="nav-title">Fake Review Detector</div>
+      <div class="nav-sub">NLP + ML · PBL Project</div>
+    </div>
   </div>
+  <div class="nav-right">
+    <div class="srv-pill">
+      <div class="srv-dot" id="srv-dot"></div>
+      <span id="srv-label">Checking…</span>
+    </div>
+    <button class="theme-btn" id="theme-btn" title="Toggle theme">🌙</button>
+  </div>
+</nav>
+
+<!-- Tabs -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('single',this)">🔍 Analyze Review</button>
+  <button class="tab" onclick="switchTab('bulk',this)">📂 Bulk CSV Upload</button>
+  <button class="tab" onclick="switchTab('compare',this)">⚖️ Compare Reviews</button>
+  <button class="tab" onclick="switchTab('history',this)">📋 Session History</button>
 </div>
 
-<br><br><br><br>
+<!-- ═══════════ SINGLE TAB ═══════════ -->
+<div class="tab-panel active" id="panel-single">
+<div class="wrap">
 
-<!-- TITLE SLIDE -->
-<section class="section text-center">
-<h1 class="text-5xl font-extrabold mb-6 gradient-text">
-AI-Based Fake Review Detection
-</h1>
-<p class="text-xl">Using NLP, Logistic Regression & Fuzzy Logic</p>
-<p class="mt-4">Khushi Wadhwa</p>
-<p>Registration ID: 2427030511</p>
-</section>
+  <div class="srv-alert" id="srv-alert">
+    <strong>⚠ Flask server offline.</strong><br/>
+    Run <code>python train_model.py</code> first, then <code>python app.py</code>.<br/>
+    Server must be at <code>http://localhost:5000</code>
+  </div>
 
-<!-- PROBLEM -->
-<section class="section" id="problem">
-<h2>Problem Statement</h2>
-<p>
-Fake reviews manipulate product ratings and mislead customers on e-commerce platforms.
-Manual detection is difficult and unreliable.
-There is a need for an automated intelligent system to detect fake and suspicious reviews.
-</p>
-</section>
+  <div class="stats">
+    <div class="stat f-s"><span class="sn f" id="st-fake">0</span><span class="sl">Fake found</span></div>
+    <div class="stat r-s"><span class="sn r" id="st-real">0</span><span class="sl">Real found</span></div>
+    <div class="stat"><span class="sn a" id="st-total">0</span><span class="sl">Analyzed</span></div>
+    <div class="stat"><span class="sn a" id="st-rate">—</span><span class="sl">Fake rate</span></div>
+  </div>
 
-<!-- OBJECTIVES -->
-<section class="section">
-<h2>Objectives</h2>
-<ul>
-<li>Detect fake reviews using Natural Language Processing (NLP)</li>
-<li>Apply Machine Learning for classification</li>
-<li>Integrate Fuzzy Logic for uncertainty-aware decisions</li>
-<li>Deploy a web-based demonstration interface</li>
-</ul>
-</section>
+  <div class="card">
+    <div class="input-hdr">
+      <label class="input-lbl" for="ta">Paste your review</label>
+      <span class="char-pill" id="char-pill">0 chars</span>
+    </div>
+    <textarea id="ta" placeholder="Paste any Amazon product review here…"></textarea>
+    <div class="ex-row">
+      <span class="ex-lbl">Examples:</span>
+      <button class="ex-btn f" onclick="loadEx('f1')">🚩 Fake — hype</button>
+      <button class="ex-btn f" onclick="loadEx('f2')">🚩 Fake — generic</button>
+      <button class="ex-btn r" onclick="loadEx('r1')">✅ Real — balanced</button>
+      <button class="ex-btn r" onclick="loadEx('r2')">✅ Real — critical</button>
+    </div>
+    <button class="btn btn-primary" id="submit-btn" onclick="analyze()">
+      <span class="spinner" id="spinner"></span>
+      <span id="btn-lbl">Analyze Review</span>
+    </button>
+    <div class="err" id="err"></div>
+    <p class="hint">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to analyze</p>
+  </div>
 
-<!-- DATASET -->
-<section class="section">
-<h2>Dataset</h2>
-<ul>
-<li>Amazon Reviews Dataset (Kaggle)</li>
-<li>Reviews text and ratings</li>
-<li>Converted ratings into binary labels</li>
-<li>Balanced dataset for fair classification</li>
-</ul>
-</section>
+  <!-- Result -->
+  <div class="result" id="result">
+    <div class="vband" id="vband">
+      <div class="vicon" id="vicon"></div>
+      <div><div class="vlabel" id="vlabel"></div><div class="vsub" id="vsub"></div></div>
+    </div>
 
-<!-- NLP -->
-<section class="section">
-<h2>NLP Preprocessing</h2>
-<ul>
-<li>Lowercasing</li>
-<li>Punctuation removal</li>
-<li>Stopword removal</li>
-<li>Text cleaning and tokenization</li>
-</ul>
-</section>
+    <div class="rsec">
+      <div class="rtitle">Model confidence</div>
+      <div class="conf-row">
+        <div><div class="conf-pct" id="conf-pct">—</div><div class="conf-hint">probability the model is correct</div></div>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="bar-fill"></div></div>
+      <div class="bar-labs"><span>0%</span><span>50%</span><span>100%</span></div>
+    </div>
 
-<!-- FEATURE EXTRACTION -->
-<section class="section">
-<h2>Feature Extraction</h2>
-<p>
-TF-IDF (Term Frequency – Inverse Document Frequency)
-</p>
-<ul>
-<li>Converts text into numerical vectors</li>
-<li>Measures importance of words</li>
-<li>Enables machine learning classification</li>
-</ul>
-</section>
+    <div class="rsec">
+      <div class="rtitle">Probability breakdown</div>
+      <div class="donut-row">
+        <div class="donut-wrap">
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r="33" fill="none" stroke="var(--s3)" stroke-width="12"/>
+            <circle id="d-real" cx="44" cy="44" r="33" fill="none" stroke="#00c896" stroke-width="12"
+              stroke-dasharray="0 207.3" style="transition:stroke-dasharray 1s cubic-bezier(.4,0,.2,1)"/>
+            <circle id="d-fake" cx="44" cy="44" r="33" fill="none" stroke="#ff4d6d" stroke-width="12"
+              stroke-dasharray="0 207.3" style="transition:stroke-dasharray 1s cubic-bezier(.4,0,.2,1)"/>
+          </svg>
+          <div class="donut-center" id="d-icon">—</div>
+        </div>
+        <div class="donut-legs">
+          <div class="dleg"><div class="dleg-dot fake"></div><span class="dleg-name">Fake probability</span><span class="dleg-val fake" id="d-fake-v">—</span></div>
+          <div class="dleg"><div class="dleg-dot real"></div><span class="dleg-name">Real probability</span><span class="dleg-val real" id="d-real-v">—</span></div>
+        </div>
+      </div>
+    </div>
 
-<!-- MODEL -->
-<section class="section">
-<h2>Machine Learning Model</h2>
-<ul>
-<li>Algorithm: Logistic Regression</li>
-<li>Binary Classification (Fake / Genuine)</li>
-<li>Provides probability-based output</li>
-<li>Balanced dataset accuracy ≈ 70%</li>
-</ul>
-</section>
+    <div class="rsec">
+      <div class="rtitle">Signal words that triggered this verdict</div>
+      <div class="chips" id="chips"></div>
+    </div>
 
-<!-- FUZZY LOGIC -->
-<section class="section" id="methodology">
-<h2>Fuzzy Logic Integration</h2>
-<p>Instead of strict binary output:</p>
-<ul>
-<li>0 – 0.45 → Likely Genuine</li>
-<li>0.45 – 0.55 → Suspicious</li>
-<li>0.55 – 1 → Likely Fake</li>
-</ul>
-<p>This handles uncertainty and improves interpretability.</p>
-</section>
+    <div class="rsec" id="hist-sec" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="rtitle" style="margin:0">Session history</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-success" onclick="exportCSV()">⬇ Export CSV</button>
+          <button class="btn btn-danger" onclick="clearHistory()">🗑 Clear</button>
+        </div>
+      </div>
+      <div class="hlist" id="hlist"></div>
+    </div>
+  </div>
 
-<!-- SYSTEM ARCHITECTURE -->
-<section class="section">
-<h2>System Architecture</h2>
-<p>
-User Input → NLP → TF-IDF → Logistic Regression → Probability → Fuzzy Logic → Final Output
-</p>
-</section>
+</div>
+</div>
 
-<!-- RESULTS -->
-<section class="section" id="results">
-<h2>Results</h2>
-<ul>
-<li>Successfully detects Genuine reviews</li>
-<li>Identifies Suspicious reviews</li>
-<li>Flags Likely Fake reviews</li>
-<li>Provides confidence percentage</li>
-</ul>
-</section>
+<!-- ═══════════ BULK TAB ═══════════ -->
+<div class="tab-panel" id="panel-bulk">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">Bulk CSV Analysis</div>
+    <p style="font-size:13px;color:var(--muted2);margin-bottom:16px;line-height:1.6">
+      Upload a CSV file with a <strong>text</strong> column (or any column containing review text).
+      Max 500 reviews per upload.
+    </p>
+    <div class="file-drop" id="file-drop" onclick="document.getElementById('csv-input').click()">
+      <input type="file" id="csv-input" accept=".csv,.txt" onchange="handleFile(this.files[0])"/>
+      <div class="file-icon">📂</div>
+      <div class="file-title">Click to upload CSV / TXT</div>
+      <div class="file-hint">Or drag and drop your file here</div>
+    </div>
+    <div class="progress-wrap" id="prog-wrap">
+      <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+      <div class="progress-label" id="prog-label">Processing…</div>
+    </div>
+    <div class="err" id="bulk-err"></div>
+  </div>
 
-<!-- IMPLEMENTATION -->
-<section class="section">
-<h2>Implementation</h2>
-<ul>
-<li>Programming Language: Python</li>
-<li>Libraries: Scikit-learn, NLTK, Gradio</li>
-<li>Frontend: Web-based interface</li>
-<li>Deployment: GitHub Pages</li>
-</ul>
-</section>
+  <div id="bulk-results" style="display:none">
+    <div class="batch-summary" id="batch-summary"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="font-size:13px;font-weight:600">Results</span>
+      <button class="btn btn-success" onclick="exportBatchCSV()">⬇ Export CSV</button>
+    </div>
+    <div class="batch-table-wrap">
+      <table>
+        <thead><tr><th>#</th><th>Verdict</th><th>Confidence</th><th>Review snippet</th></tr></thead>
+        <tbody id="batch-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
 
-<!-- CONCLUSION -->
-<section class="section" id="conclusion">
-<h2>Conclusion</h2>
-<p>
-The system successfully integrates NLP, Machine Learning,
-and Fuzzy Logic to detect fake reviews with uncertainty-aware classification.
-It provides a scalable foundation for e-commerce review analysis.
-</p>
-</section>
+<!-- ═══════════ COMPARE TAB ═══════════ -->
+<div class="tab-panel" id="panel-compare">
+<div class="wrap">
+  <div class="card">
+    <div class="card-title">Side-by-side Review Comparison</div>
+    <p style="font-size:13px;color:var(--muted2);margin-bottom:18px;line-height:1.6">
+      Paste two reviews to compare their authenticity scores side by side.
+    </p>
+    <div class="compare-grid">
+      <div class="cmp-panel">
+        <div class="cmp-label">Review A</div>
+        <textarea id="cmp-a" placeholder="Paste first review here…" style="height:110px"></textarea>
+        <div class="cmp-result" id="cmp-res-a">
+          <div class="cmp-verdict" id="cmp-v-a"></div>
+          <div class="cmp-row"><span class="cmp-lbl">Confidence</span><span class="cmp-val" id="cmp-c-a"></span></div>
+          <div class="cmp-row"><span class="cmp-lbl">Fake prob.</span><span class="cmp-val" id="cmp-fp-a"></span></div>
+          <div class="cmp-row"><span class="cmp-lbl">Real prob.</span><span class="cmp-val" id="cmp-rp-a"></span></div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">Top words: <span id="cmp-kw-a" style="color:var(--muted2)"></span></div>
+        </div>
+      </div>
+      <div class="vs-divider">VS</div>
+      <div class="cmp-panel">
+        <div class="cmp-label">Review B</div>
+        <textarea id="cmp-b" placeholder="Paste second review here…" style="height:110px"></textarea>
+        <div class="cmp-result" id="cmp-res-b">
+          <div class="cmp-verdict" id="cmp-v-b"></div>
+          <div class="cmp-row"><span class="cmp-lbl">Confidence</span><span class="cmp-val" id="cmp-c-b"></span></div>
+          <div class="cmp-row"><span class="cmp-lbl">Fake prob.</span><span class="cmp-val" id="cmp-fp-b"></span></div>
+          <div class="cmp-row"><span class="cmp-lbl">Real prob.</span><span class="cmp-val" id="cmp-rp-b"></span></div>
+          <div style="margin-top:8px;font-size:11px;color:var(--muted)">Top words: <span id="cmp-kw-b" style="color:var(--muted2)"></span></div>
+        </div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="cmp-btn" onclick="compareReviews()" style="margin-top:16px">
+      <span class="spinner" id="cmp-spin"></span>
+      <span id="cmp-btn-lbl">Compare Reviews</span>
+    </button>
+    <div class="err" id="cmp-err"></div>
+  </div>
+  <div class="cmp-winner" id="cmp-winner"></div>
+</div>
+</div>
 
-<!-- FUTURE WORK -->
-<section class="section">
-<h2>Future Work</h2>
-<ul>
-<li>Train on larger dataset</li>
-<li>Deep Learning integration</li>
-<li>Chrome extension deployment</li>
-<li>Multi-language support</li>
-</ul>
-</section>
+<!-- ═══════════ HISTORY TAB ═══════════ -->
+<div class="tab-panel" id="panel-history">
+<div class="wrap">
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div class="card-title" style="margin:0">Full session history</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-success" onclick="exportCSV()">⬇ Export CSV</button>
+        <button class="btn btn-danger" onclick="clearHistory()">🗑 Clear all</button>
+      </div>
+    </div>
+    <div id="hist-full-empty" style="padding:32px;text-align:center;color:var(--muted);font-size:13px">
+      No reviews analyzed yet. Go to the "Analyze Review" tab to get started.
+    </div>
+    <div class="batch-table-wrap" id="hist-table-wrap" style="display:none">
+      <table>
+        <thead><tr><th>#</th><th>Verdict</th><th>Confidence</th><th>Fake %</th><th>Review snippet</th></tr></thead>
+        <tbody id="hist-full-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</div>
 
+<script>
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+const CIRC = 2 * Math.PI * 33; // 207.3
+let session = { fake:0, real:0, total:0 };
+let history = [];
+let batchResults = [];
+
+const EXAMPLES = {
+  f1:"This is the BEST product I have EVER bought in my entire life!!! Absolutely incredible!! I use it every single day and it has completely changed my life. The shipping was super lightning fast and the seller is an absolute angel. HIGHLY recommend to absolutely everyone. Five stars is not even enough!!!",
+  f2:"Excellent product. Very good quality. Fast shipping. Highly recommend. Will buy again. Best purchase ever. Love it. Great seller. Top quality. Very satisfied. Amazing value. Five stars.",
+  r1:"I've been using this about three weeks. Build quality feels solid overall though the zipper on the side pocket is a bit stiff. Shipping took 6 days — longer than estimated. For the price it does what I need, nothing extraordinary but no major complaints.",
+  r2:"Disappointed honestly. Color is noticeably darker than in the photos and the material feels cheaper. Two screws were missing from the box. Customer service did respond quickly and sent replacements which I appreciated, so bumping from 1 to 2 stars. Wouldn't buy again."
+};
+
+/* ══════════════════════════════════════════════════════
+   THEME
+══════════════════════════════════════════════════════ */
+let dark = true;
+document.getElementById("theme-btn").onclick = () => {
+  dark = !dark;
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  document.getElementById("theme-btn").textContent = dark ? "🌙" : "☀️";
+};
+
+/* ══════════════════════════════════════════════════════
+   TABS
+══════════════════════════════════════════════════════ */
+function switchTab(name, el) {
+  document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("panel-"+name).classList.add("active");
+  if (name === "history") renderFullHistory();
+}
+
+/* ══════════════════════════════════════════════════════
+   SERVER CHECK
+══════════════════════════════════════════════════════ */
+async function checkServer() {
+  try {
+    const r = await fetch("/health", { signal: AbortSignal.timeout(2500) });
+    const on = r.ok;
+    document.getElementById("srv-dot").className   = "srv-dot " + (on ? "on" : "off");
+    document.getElementById("srv-label").textContent = on ? "Server online" : "Server offline";
+    document.getElementById("srv-alert").classList.toggle("show", !on);
+  } catch {
+    document.getElementById("srv-dot").className   = "srv-dot off";
+    document.getElementById("srv-label").textContent = "Server offline";
+    document.getElementById("srv-alert").classList.add("show");
+  }
+}
+checkServer();
+setInterval(checkServer, 15000);
+
+/* ══════════════════════════════════════════════════════
+   SINGLE ANALYZE
+══════════════════════════════════════════════════════ */
+document.getElementById("ta").addEventListener("input", function() {
+  const n = this.value.length;
+  const el = document.getElementById("char-pill");
+  el.textContent = n + " chars";
+  el.className = "char-pill" + (n >= 20 ? " ok" : "");
+});
+document.getElementById("ta").addEventListener("keydown", e => {
+  if (e.key==="Enter" && (e.ctrlKey||e.metaKey)) analyze();
+});
+
+function loadEx(k) {
+  document.getElementById("ta").value = EXAMPLES[k];
+  document.getElementById("ta").dispatchEvent(new Event("input"));
+  document.getElementById("result").style.display = "none";
+  document.getElementById("err").style.display    = "none";
+}
+
+async function analyze() {
+  const text = document.getElementById("ta").value.trim();
+  if (text.length < 20) { showErr("err","Please paste a longer review (20+ characters)."); return; }
+  setLoad("submit-btn","spinner","btn-lbl",true,"Analyzing…");
+  hideErr("err");
+  try {
+    const r = await fetch("/predict",{
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({text}), signal:AbortSignal.timeout(10000)
+    });
+    if (!r.ok) throw new Error((await r.json()).error || "Server error");
+    renderResult(await r.json(), text);
+    document.getElementById("srv-alert").classList.remove("show");
+  } catch(e) {
+    if (e.name==="TimeoutError"||e.message.includes("fetch")) {
+      document.getElementById("srv-alert").classList.add("show");
+      showErr("err","Cannot reach server.");
+    } else showErr("err", e.message);
+  } finally { setLoad("submit-btn","spinner","btn-lbl",false,"Analyze Review"); }
+}
+
+function renderResult(d, text) {
+  const isFake = d.label===1, cls = isFake?"fake":"real";
+  const icon   = isFake?"🚩":"✅";
+  const sub    = isFake
+    ? "This review shows patterns of fabricated or incentivised content."
+    : "This review is consistent with genuine customer feedback.";
+
+  const band = document.getElementById("vband");
+  band.className = "vband "+cls;
+  document.getElementById("vicon").textContent = icon;
+  document.getElementById("vlabel").textContent = d.verdict+" REVIEW";
+  document.getElementById("vlabel").className   = "vlabel";
+  document.getElementById("vsub").textContent   = sub;
+
+  const cp = document.getElementById("conf-pct");
+  cp.textContent = d.confidence+"%"; cp.className = "conf-pct "+cls;
+  const bf = document.getElementById("bar-fill");
+  bf.className = "bar-fill "+cls;
+  setTimeout(()=>{ bf.style.width = d.confidence+"%"; },60);
+
+  const fp = Math.round(d.proba.fake*100), rp = 100-fp;
+  const rArc = (rp/100)*CIRC, fArc = (fp/100)*CIRC;
+  setTimeout(()=>{
+    document.getElementById("d-real").style.strokeDasharray = `${rArc} ${CIRC}`;
+    document.getElementById("d-fake").style.strokeDasharray = `${fArc} ${CIRC}`;
+    document.getElementById("d-fake").style.strokeDashoffset = `-${rArc}`;
+  },80);
+  document.getElementById("d-icon").textContent  = icon;
+  document.getElementById("d-fake-v").textContent = fp+"%";
+  document.getElementById("d-real-v").textContent = rp+"%";
+
+  document.getElementById("chips").innerHTML = d.keywords.length
+    ? d.keywords.map((k,i)=>`<span class="chip ${cls}" style="animation-delay:${i*55}ms">${k.word}</span>`).join("")
+    : `<span style="color:var(--muted);font-size:12px">No strong signal words.</span>`;
+
+  if (isFake) session.fake++; else session.real++;
+  session.total++;
+  updateStats();
+
+  history.unshift({cls,icon,text:text.substring(0,70)+(text.length>70?"…":""),conf:d.confidence,fp,rp,d});
+  if(history.length>50) history.pop();
+  renderMiniHistory();
+
+  const res = document.getElementById("result");
+  res.style.display = "block";
+  setTimeout(()=>res.scrollIntoView({behavior:"smooth",block:"nearest"}),60);
+}
+
+function updateStats() {
+  const bump = id=>{ const e=document.getElementById(id); e.classList.remove("bump"); void e.offsetWidth; e.classList.add("bump"); };
+  document.getElementById("st-fake").textContent  = session.fake;
+  document.getElementById("st-real").textContent  = session.real;
+  document.getElementById("st-total").textContent = session.total;
+  document.getElementById("st-rate").textContent  = session.total ? Math.round(session.fake/session.total*100)+"%" : "—";
+  ["st-fake","st-real","st-total","st-rate"].forEach(bump);
+}
+
+function renderMiniHistory() {
+  const sec = document.getElementById("hist-sec");
+  sec.style.display = history.length ? "block" : "none";
+  document.getElementById("hlist").innerHTML = history.slice(0,8).map(h=>`
+    <div class="hitem">
+      <span class="hbadge ${h.cls}">${h.cls.toUpperCase()}</span>
+      <span class="htext">${h.text}</span>
+      <span class="hconf ${h.cls}">${h.conf}%</span>
+    </div>`).join("");
+}
+
+function clearHistory() {
+  history = []; session = {fake:0,real:0,total:0};
+  renderMiniHistory(); updateStats();
+  document.getElementById("hist-sec").style.display="none";
+  renderFullHistory();
+}
+
+function exportCSV() {
+  if (!history.length) { alert("No results to export."); return; }
+  const rows = [["Verdict","Confidence","Fake%","Real%","Snippet"]];
+  history.forEach(h=>rows.push([h.cls.toUpperCase(),h.conf+"%",h.fp+"%",h.rp+"%",'"'+h.text.replace(/"/g,'""')+'"']));
+  const blob = new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "fake_review_results.csv";
+  a.click();
+}
+
+/* ══════════════════════════════════════════════════════
+   BULK CSV
+══════════════════════════════════════════════════════ */
+const drop = document.getElementById("file-drop");
+drop.addEventListener("dragover",e=>{e.preventDefault();drop.classList.add("drag")});
+drop.addEventListener("dragleave",()=>drop.classList.remove("drag"));
+drop.addEventListener("drop",e=>{e.preventDefault();drop.classList.remove("drag");handleFile(e.dataTransfer.files[0])});
+
+function handleFile(file) {
+  if (!file) return;
+  hideErr("bulk-err");
+  const reader = new FileReader();
+  reader.onload = e => parseBulk(e.target.result);
+  reader.readAsText(file);
+}
+
+function parseBulk(content) {
+  const lines = content.split("\n").map(l=>l.trim()).filter(Boolean);
+  if (!lines.length) { showErr("bulk-err","Empty file."); return; }
+
+  // Detect delimiter
+  const delim = lines[0].includes("\t") ? "\t" : ",";
+
+  // Parse header
+  const headers = lines[0].split(delim).map(h=>h.replace(/^"|"$/g,"").trim().toLowerCase());
+  const textCol = headers.findIndex(h=>["text","review_text","review","comment","body","content"].some(k=>h.includes(k)));
+
+  let texts = [];
+  if (textCol >= 0 && lines.length > 1) {
+    // Has header row
+    for (let i=1; i<Math.min(lines.length,501); i++) {
+      const cols = smartSplit(lines[i], delim);
+      if (cols[textCol]) texts.push(cols[textCol].replace(/^"|"$/g,"").trim());
+    }
+  } else {
+    // Single column, no header — each line is a review
+    texts = lines.slice(0,500).map(l=>l.replace(/^"|"$/g,"").trim()).filter(t=>t.length>=10);
+  }
+
+  if (!texts.length) { showErr("bulk-err","No review text found. Make sure the file has a column with review text."); return; }
+  if (texts.length > 500) texts = texts.slice(0,500);
+
+  runBatch(texts);
+}
+
+function smartSplit(line, delim) {
+  const result=[]; let cur="", inQ=false;
+  for (const ch of line) {
+    if (ch==='"') { inQ=!inQ; continue; }
+    if (ch===delim && !inQ) { result.push(cur); cur=""; continue; }
+    cur+=ch;
+  }
+  result.push(cur);
+  return result;
+}
+
+async function runBatch(texts) {
+  const prog = document.getElementById("prog-wrap");
+  const fill = document.getElementById("prog-fill");
+  const lbl  = document.getElementById("prog-label");
+  prog.classList.add("show");
+  document.getElementById("bulk-results").style.display="none";
+
+  const CHUNK = 10;
+  batchResults = [];
+
+  for (let i=0; i<texts.length; i+=CHUNK) {
+    const chunk = texts.slice(i, i+CHUNK);
+    try {
+      const r = await fetch("/batch",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({texts:chunk})
+      });
+      const data = await r.json();
+      data.results.forEach((res,j)=>{
+        batchResults.push({...res, text_snippet: texts[i+j].substring(0,80)});
+      });
+    } catch { chunk.forEach(t=>batchResults.push({error:"offline",text_snippet:t.substring(0,80)})); }
+    const pct = Math.min(Math.round((i+CHUNK)/texts.length*100),100);
+    fill.style.width = pct+"%";
+    lbl.textContent  = `Processing ${Math.min(i+CHUNK,texts.length)} of ${texts.length} reviews…`;
+    await new Promise(r=>setTimeout(r,30));
+  }
+
+  prog.classList.remove("show");
+  renderBatch();
+}
+
+function renderBatch() {
+  const valid = batchResults.filter(r=>!r.error);
+  const fc = valid.filter(r=>r.label===1).length;
+  const rc = valid.length - fc;
+  const fp = valid.length ? Math.round(fc/valid.length*100) : 0;
+
+  document.getElementById("batch-summary").innerHTML = `
+    <div class="bsum-item"><div class="bsum-n a">${valid.length}</div><div class="bsum-l">Total</div></div>
+    <div class="bsum-item"><div class="bsum-n f">${fc}</div><div class="bsum-l">Fake</div></div>
+    <div class="bsum-item"><div class="bsum-n r">${rc}</div><div class="bsum-l">Real</div></div>
+    <div class="bsum-item"><div class="bsum-n f">${fp}%</div><div class="bsum-l">Fake rate</div></div>`;
+
+  const tbody = document.getElementById("batch-tbody");
+  tbody.innerHTML = batchResults.map((r,i)=>{
+    if (r.error) return `<tr><td>${i+1}</td><td colspan="3" style="color:var(--muted)">Error</td></tr>`;
+    const cls = r.label===1?"fake":"real";
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><span class="verdict-pill ${cls}">${r.label===1?"🚩":"✅"} ${r.verdict}</span></td>
+      <td style="font-weight:700;color:var(--${cls})">${r.confidence}%</td>
+      <td style="color:var(--muted2)">${r.text_snippet}…</td>
+    </tr>`;
+  }).join("");
+
+  document.getElementById("bulk-results").style.display="block";
+}
+
+function exportBatchCSV() {
+  if (!batchResults.length) { alert("No batch results yet."); return; }
+  const rows=[["#","Verdict","Confidence","Fake%","Real%","Snippet"]];
+  batchResults.forEach((r,i)=>{
+    if(r.error){ rows.push([i+1,"ERROR","","","",r.text_snippet||""]); return; }
+    rows.push([i+1,r.verdict,r.confidence+"%",Math.round(r.proba.fake*100)+"%",Math.round(r.proba.real*100)+"%",'"'+(r.text_snippet||"").replace(/"/g,'""')+'"']);
+  });
+  const blob=new Blob([rows.map(r=>r.join(",")).join("\n")],{type:"text/csv"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="batch_results.csv"; a.click();
+}
+
+/* ══════════════════════════════════════════════════════
+   COMPARE
+══════════════════════════════════════════════════════ */
+async function compareReviews() {
+  const ta = document.getElementById("cmp-a").value.trim();
+  const tb = document.getElementById("cmp-b").value.trim();
+  if (ta.length<20||tb.length<20) { showErr("cmp-err","Both reviews need at least 20 characters."); return; }
+  hideErr("cmp-err");
+  setLoad("cmp-btn","cmp-spin","cmp-btn-lbl",true,"Comparing…");
+
+  try {
+    const [ra, rb] = await Promise.all([
+      fetch("/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:ta})}).then(r=>r.json()),
+      fetch("/predict",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({text:tb})}).then(r=>r.json()),
+    ]);
+    renderCompare(ra, rb);
+  } catch(e) { showErr("cmp-err","Server error: "+e.message); }
+  finally { setLoad("cmp-btn","cmp-spin","cmp-btn-lbl",false,"Compare Reviews"); }
+}
+
+function renderCompare(a, b) {
+  const fill = (suffix, d) => {
+    const cls = d.label===1?"fake":"real";
+    document.getElementById(`cmp-v-${suffix}`).textContent = (d.label===1?"🚩 ":"✅ ")+d.verdict+" REVIEW";
+    document.getElementById(`cmp-v-${suffix}`).className   = "cmp-verdict "+cls;
+    document.getElementById(`cmp-c-${suffix}`).textContent = d.confidence+"%";
+    document.getElementById(`cmp-fp-${suffix}`).textContent= Math.round(d.proba.fake*100)+"%";
+    document.getElementById(`cmp-rp-${suffix}`).textContent= Math.round(d.proba.real*100)+"%";
+    document.getElementById(`cmp-kw-${suffix}`).textContent= d.keywords.slice(0,4).map(k=>k.word).join(", ");
+    const res = document.getElementById(`cmp-res-${suffix}`);
+    res.classList.add("show");
+    res.style.borderColor = `var(--${cls})`;
+  };
+  fill("a",a); fill("b",b);
+
+  const winner = document.getElementById("cmp-winner");
+  winner.classList.add("show");
+  if (a.label===b.label) {
+    winner.className="cmp-winner show tie";
+    winner.textContent=`Both reviews are classified as ${a.verdict}. No clear winner.`;
+  } else if (a.label===0) {
+    winner.className="cmp-winner show a-wins";
+    winner.textContent=`✅ Review A appears more trustworthy (Real · ${a.confidence}% confidence)`;
+  } else {
+    winner.className="cmp-winner show b-wins";
+    winner.textContent=`✅ Review B appears more trustworthy (Real · ${b.confidence}% confidence)`;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   FULL HISTORY
+══════════════════════════════════════════════════════ */
+function renderFullHistory() {
+  const empty = document.getElementById("hist-full-empty");
+  const wrap  = document.getElementById("hist-table-wrap");
+  if (!history.length) { empty.style.display="block"; wrap.style.display="none"; return; }
+  empty.style.display="none"; wrap.style.display="block";
+  document.getElementById("hist-full-tbody").innerHTML = history.map((h,i)=>{
+    const cls=h.cls;
+    return `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td><span class="verdict-pill ${cls}">${h.icon} ${cls.toUpperCase()}</span></td>
+      <td style="font-weight:700;color:var(--${cls})">${h.conf}%</td>
+      <td style="color:var(--muted)">${h.fp}%</td>
+      <td style="color:var(--muted2)">${h.text}</td>
+    </tr>`;
+  }).join("");
+}
+
+/* ══════════════════════════════════════════════════════
+   UTILS
+══════════════════════════════════════════════════════ */
+function setLoad(btnId,spinId,lblId,on,txt) {
+  document.getElementById(spinId).style.display = on?"block":"none";
+  document.getElementById(lblId).textContent    = txt;
+  document.getElementById(btnId).disabled       = on;
+}
+function showErr(id,msg){ const e=document.getElementById(id); e.textContent=msg; e.style.display="block"; }
+function hideErr(id){ document.getElementById(id).style.display="none"; }
+</script>
 </body>
 </html>
-
